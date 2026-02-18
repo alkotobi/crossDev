@@ -883,11 +883,23 @@ void loadHTMLFile(void* webViewHandle, const std::string& filePath) {
         std::wstring wpath = stringToWString(filePath);
         wchar_t fullPath[MAX_PATH];
         if (GetFullPathNameW(wpath.c_str(), MAX_PATH, fullPath, nullptr)) {
-            std::wstring url = L"file:///" + std::wstring(fullPath);
-            // Replace backslashes with forward slashes
-            for (size_t i = 0; i < url.length(); ++i) {
-                if (url[i] == L'\\') url[i] = L'/';
+            std::wstring pathStr(fullPath);
+            // Replace backslashes with forward slashes for file:// URL
+            for (size_t i = 0; i < pathStr.length(); ++i) {
+                if (pathStr[i] == L'\\') pathStr[i] = L'/';
             }
+            // Convert to file:// URL: file:///C:/path/to/file.html
+            std::wstring url = L"file:///";
+            if (pathStr.length() >= 2 && pathStr[1] == L':') {
+                url += pathStr;  // C:/path/... 
+            } else {
+                url += pathStr;
+            }
+            
+            std::wcout << L"loadHTMLFile: Loading from: " << url << std::endl;
+            OutputDebugStringW((L"loadHTMLFile: " + url + L"\n").c_str());
+            
+            // For local files, use Navigate which properly handles file:// URLs and relative assets
             data->webview->Navigate(url.c_str());
         }
     } else if (!data->initialized) {

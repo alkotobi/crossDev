@@ -107,8 +107,19 @@ void loadHTMLFile(void* webViewHandle, const std::string& filePath) {
         std::string htmlContent = buffer.str();
         file.close();
         
-        webkit_web_view_load_html(data->webView, htmlContent.c_str(), 
-                                  ("file://" + filePath).c_str());
+        // IMPORTANT: baseURL should be the DIRECTORY containing the HTML file
+        // This allows relative paths in HTML (like <script src="assets/file.js">) to resolve correctly
+        std::string dirPath = filePath;
+        size_t lastSlash = dirPath.find_last_of("/\\");
+        if (lastSlash != std::string::npos) {
+            dirPath = dirPath.substr(0, lastSlash + 1);  // Include the trailing slash
+        }
+        std::string baseURL = "file://" + dirPath;
+        
+        std::cout << "loadHTMLFile: filePath=" << filePath << std::endl;
+        std::cout << "loadHTMLFile: baseURL=" << baseURL << std::endl;
+        
+        webkit_web_view_load_html(data->webView, htmlContent.c_str(), baseURL.c_str());
     }
 }
 

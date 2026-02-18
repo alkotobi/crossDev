@@ -264,22 +264,26 @@ void loadHTMLFile(void* webViewHandle, const std::string& filePath) {
         
         WKWebView *webView = (__bridge WKWebView*)webViewHandle;
         
-        // Read file content
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            NSLog(@"Failed to open file: %s", filePath.c_str());
-            return;
+        NSString *filePathStr = [NSString stringWithUTF8String:filePath.c_str()];
+        NSURL *fileURL = [NSURL fileURLWithPath:filePathStr];
+        
+        // Extract directory to allow read access to sibling resources (assets, etc.)
+        NSString *dirPath = [filePathStr stringByDeletingLastPathComponent];
+        NSURL *directoryURL = [NSURL fileURLWithPath:dirPath isDirectory:YES];
+        
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        BOOL fileExists = [fileManager fileExistsAtPath:filePathStr];
+        
+        NSLog(@"loadHTMLFile: filePath=%s", filePath.c_str());
+        NSLog(@"loadHTMLFile: fileExists=%d", fileExists ? 1 : 0);
+        NSLog(@"loadHTMLFile: directoryURL=%s", [[directoryURL absoluteString] UTF8String]);
+        
+        if (fileExists) {
+            // Use loadFileURL which properly handles sandbox permissions for relative resource access
+            [webView loadFileURL:fileURL allowingReadAccessToURL:directoryURL];
+        } else {
+            NSLog(@"File not found: %s", filePath.c_str());
         }
-        
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        std::string htmlContent = buffer.str();
-        file.close();
-        
-        NSString *htmlString = [NSString stringWithUTF8String:htmlContent.c_str()];
-        NSURL *baseURL = [NSURL fileURLWithPath:[NSString stringWithUTF8String:filePath.c_str()]];
-        
-        [webView loadHTMLString:htmlString baseURL:baseURL];
     }
 }
 

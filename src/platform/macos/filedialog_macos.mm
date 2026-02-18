@@ -99,13 +99,18 @@ static bool showOpenFileDialogImpl(void* windowHandle, const std::string& title,
                 done = YES;
             }];
             // Pump run loop until sheet is dismissed (avoids sync->async API mismatch)
+            // Continuously set arrow cursor to suppress the hourglass/busy cursor that appears periodically
             while (!done) {
-                [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+                [[NSCursor arrowCursor] set];  // Set cursor before each run loop iteration
+                [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
             }
             result = modalResult;
         } else {
             result = [panel runModal];
         }
+        
+        // Ensure cursor is arrow after dialog
+        [[NSCursor arrowCursor] set];
         
         if (result == NSModalResponseOK) {
             NSURL* url = [panel URL];
