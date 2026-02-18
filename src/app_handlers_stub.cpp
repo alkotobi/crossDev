@@ -6,9 +6,10 @@
 #include "../include/app_handlers.h"
 #include "../include/message_router.h"
 
+extern "C" {
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((weak))
 #endif
 void registerAppHandlers(MessageRouter* /*router*/) {
-    // No-op: no app handlers registered
+}
 }

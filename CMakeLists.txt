@@ -137,18 +137,7 @@ set(CORE_SOURCES
     ${SETTINGS_EMBED_CPP}
 )
 
-# Add main.cpp for non-iOS platforms
-if(NOT PLATFORM STREQUAL "ios")
-    list(APPEND CORE_SOURCES src/main.cpp)
-endif()
-
-# App handlers: stub (no-op) when no app; apps provide strong symbol when BUILD_CARS_APP.
-# On Windows/MSVC we must exclude stub when app is linked (no weak symbol support).
-if(BUILD_CARS_APP AND NOT PLATFORM STREQUAL "ios")
-    # app_cars provides registerAppHandlers; stub not needed
-else()
-    list(APPEND CORE_SOURCES src/app_handlers_stub.cpp)
-endif()
+list(APPEND CORE_SOURCES src/app_handlers_stub.cpp)
 
 # Platform-specific sources
 if(PLATFORM STREQUAL "macos")
@@ -327,14 +316,12 @@ elseif(PLATFORM STREQUAL "ios")
     endif()
 endif()
 
-# All sources
+# All sources (excluding src/main.cpp)
 set(ALL_SOURCES ${CORE_SOURCES} ${PLATFORM_SOURCES})
 list(LENGTH ALL_SOURCES _src_count)
 message(STATUS "Total sources: ${_src_count} (CORE + PLATFORM)")
 
-# Create executable
 if(PLATFORM STREQUAL "ios")
-    # For iOS, create an app bundle
     add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${ALL_SOURCES})
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
@@ -351,15 +338,19 @@ if(PLATFORM STREQUAL "ios")
         XCODE_ATTRIBUTE_OTHER_LDFLAGS "$(inherited) -framework UIKit -framework Foundation -framework WebKit"
     )
 else()
-    add_executable(${PROJECT_NAME} ${ALL_SOURCES})
+    add_library(crossdev_core STATIC ${ALL_SOURCES})
+    add_executable(${PROJECT_NAME} src/main.cpp)
+    target_link_libraries(${PROJECT_NAME} PRIVATE crossdev_core)
 endif()
 
-# Config directory is .../CrossDev/<CROSSDEV_APP_NAME>/options.json (pass string literal to C++)
 target_compile_definitions(${PROJECT_NAME} PRIVATE "CROSSDEV_APP_NAME=\"${CROSSDEV_APP_NAME}\"")
 
-# Link libraries
 if(PLATFORM_LIBS)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${PLATFORM_LIBS})
+    if(TARGET crossdev_core)
+        target_link_libraries(crossdev_core PRIVATE ${PLATFORM_LIBS})
+    else()
+        target_link_libraries(${PROJECT_NAME} PRIVATE ${PLATFORM_LIBS})
+    endif()
 endif()
 
 # OpenXLSX for Excel export (template-based .xlsx: copy template, fill cells)
@@ -630,16 +621,8 @@ if(NOT PLATFORM STREQUAL "ios")
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/examples
     )
 
-    # Cars app: createInvoice handler, etc. Strong registerAppHandlers overrides weak stub.
-    if(BUILD_CARS_APP AND EXISTS "${CMAKE_SOURCE_DIR}/apps/cars")
-        add_subdirectory(apps/cars)
-        target_link_libraries(${PROJECT_NAME} PRIVATE app_cars)
-        target_link_libraries(layout_demo PRIVATE app_cars)
-        message(STATUS "Cars app: ENABLED (createInvoice handler)")
-    elseif(BUILD_CARS_APP)
-        message(STATUS "Cars app: skipped (apps/cars not found; build from cars repo or disable with -DBUILD_CARS_APP=OFF)")
-    else()
-        message(STATUS "Cars app: disabled (using weak stub)")
+    if(BUILD_CARS_APP)
+        message(STATUS "Cars app plugin: build it in the cars repo (CrossDev only loads CrossDevAppPlugin.* at runtime)")
     endif()
 endif()
 

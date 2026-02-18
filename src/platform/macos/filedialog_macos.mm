@@ -72,17 +72,14 @@ static bool showOpenFileDialogImpl(void* windowHandle, const std::string& title,
         // Activate the app to ensure dialog is visible
         [[NSApplication sharedApplication] activateIgnoringOtherApps:YES];
         
-        // Get parent window - use keyWindow when nil so sheet attaches to frontmost window.
-        // Standalone runModal when invoked from child (e.g. Settings) can appear disabled;
-        // presenting as sheet to the key window fixes focus and interactivity.
         NSWindow* parentWindow = nil;
         if (windowHandle) {
             parentWindow = (__bridge NSWindow*)windowHandle;
         }
-        if (!parentWindow) {
+        if (!parentWindow && title != "Select CrossDev plugin (CrossDevAppPlugin)") {
             parentWindow = [NSApp keyWindow];
         }
-        if (!parentWindow) {
+        if (!parentWindow && title != "Select CrossDev plugin (CrossDevAppPlugin)") {
             parentWindow = [NSApp mainWindow];
         }
         if (parentWindow) {
@@ -90,18 +87,15 @@ static bool showOpenFileDialogImpl(void* windowHandle, const std::string& title,
         }
         
         NSInteger result;
-        if (parentWindow) {
-            // Present as sheet attached to the window - avoids "disabled" state
+        if (parentWindow && title != "Select CrossDev plugin (CrossDevAppPlugin)") {
             __block NSModalResponse modalResult = NSModalResponseCancel;
             __block BOOL done = NO;
             [panel beginSheetModalForWindow:parentWindow completionHandler:^(NSModalResponse resp) {
                 modalResult = resp;
                 done = YES;
             }];
-            // Pump run loop until sheet is dismissed (avoids sync->async API mismatch)
-            // Continuously set arrow cursor to suppress the hourglass/busy cursor that appears periodically
             while (!done) {
-                [[NSCursor arrowCursor] set];  // Set cursor before each run loop iteration
+                [[NSCursor arrowCursor] set];
                 [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.01]];
             }
             result = modalResult;

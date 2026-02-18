@@ -21,6 +21,71 @@
 #include "../include/app_handlers.h"
 #include "platform/platform_impl.h"
 #include <iostream>
+#include <filesystem>
+#include <stdexcept>
+#if defined(_WIN32)
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
+
+using RegisterAppHandlersFn = void (*)(MessageRouter*);
+
+static std::string getExecutableDir(const char* argv0) {
+    namespace fs = std::filesystem;
+    try {
+        fs::path p = fs::absolute(fs::path(argv0));
+        return p.parent_path().string();
+    } catch (...) {
+        return "";
+    }
+}
+
+static std::string getPluginPath(const std::string& exeDir) {
+#if defined(_WIN32)
+    const char* name = "CrossDevAppPlugin.dll";
+#elif defined(__APPLE__)
+    const char* name = "libCrossDevAppPlugin.dylib";
+#else
+    const char* name = "libCrossDevAppPlugin.so";
+#endif
+#if defined(_WIN32)
+    const char sep = '\\';
+#else
+    const char sep = '/';
+#endif
+    if (!exeDir.empty()) {
+        return exeDir + std::string(1, sep) + name;
+    }
+    return name;
+}
+
+static bool tryLoadPluginFromPath(const std::string& path, MessageRouter* router) {
+#if defined(_WIN32)
+    HMODULE h = LoadLibraryA(path.c_str());
+    if (!h) return false;
+    auto fn = reinterpret_cast<RegisterAppHandlersFn>(GetProcAddress(h, "registerAppHandlers"));
+    if (!fn) {
+        FreeLibrary(h);
+        return false;
+    }
+#else
+    void* h = dlopen(path.c_str(), RTLD_NOW);
+    if (!h) return false;
+    auto fn = reinterpret_cast<RegisterAppHandlersFn>(dlsym(h, "registerAppHandlers"));
+    if (!fn) {
+        dlclose(h);
+        return false;
+    }
+#endif
+    fn(router);
+    return true;
+}
+
+static bool tryLoadPlugin(const std::string& exeDir, MessageRouter* router) {
+    std::string path = getPluginPath(exeDir);
+    return tryLoadPluginFromPath(path, router);
+}
 
 AppRunner::AppRunner(int argc, const char* argv[])
     : argc_(argc), argv_(argv) {
@@ -168,8 +233,31 @@ void AppRunner::registerHandlers() {
     router->registerHandler(createFocusWindowHandler());
     router->registerHandler(createOptionsHandler());
     router->registerHandler(createReloadMainContentHandler(mainWindow_.get()));
-
-    registerAppHandlers(router);
+    std::string exeDir;
+    if (argc_ > 0 && argv_) {
+        exeDir = getExecutableDir(argv_[0]);
+    }
+    if (!tryLoadPlugin(exeDir, router)) {
+        std::string manualPath;
+        std::string title = "Select CrossDev plugin (CrossDevAppPlugin)";
+        std::string filter =
+#if defined(__APPLE__)
+            "Dynamic Libraries (*.dylib)|*.dylib|All Files (*.*)|*.*";
+#elif defined(_WIN32)
+            "Dynamic Libraries (*.dll)|*.dll|All Files (*.*)|*.*";
+#else
+            "Shared Objects (*.so)|*.so|All Files (*.*)|*.*";
+#endif
+        bool selected = platform::showOpenFileDialog(
+            nullptr,
+            title,
+            filter,
+            manualPath
+        );
+        if (!selected || manualPath.empty() || !tryLoadPluginFromPath(manualPath, router)) {
+            throw std::runtime_error("Required plugin CrossDevAppPlugin not found or failed to load");
+        }
+    }
 }
 
 int AppRunner::run() {
