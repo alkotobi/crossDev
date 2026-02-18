@@ -23,6 +23,13 @@ typedef void (*FocusCallback)(void* userData);
 typedef void (*StateCallback)(const char* state, void* userData);
 typedef void (*FileDropCallback)(const std::string& pathsJson, void* userData);
 
+// Content view with flipped coordinates (y=0 at top) to match our top-left convention
+@interface FlippedView : NSView
+@end
+@implementation FlippedView
+- (BOOL)isFlipped { return YES; }
+@end
+
 @interface WindowResizeDelegate : NSObject <NSWindowDelegate, NSDraggingDestination>
 @property (assign) ResizeCallback resizeCallback;
 @property (assign) void* resizeUserData;
@@ -145,8 +152,7 @@ void* createWindow(int x, int y, int width, int height, const std::string& title
             defer:NO];
         
         // Use flipped content view so y=0 is at top (matches our top-left coordinate convention)
-        NSView *contentView = [[NSView alloc] initWithFrame:windowRect];
-        [contentView setFlipped:YES];
+        NSView *contentView = [[FlippedView alloc] initWithFrame:windowRect];
         [window setContentView:contentView];
         
         NSString *nsTitle = [NSString stringWithUTF8String:title.c_str()];

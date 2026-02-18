@@ -27,56 +27,64 @@ ConfigManager& ConfigManager::getInstance() {
     return instance;
 }
 
-std::string ConfigManager::getConfigDirectory() {
-    std::string configDir;
-    
+std::string ConfigManager::getAppName() {
+#ifdef CROSSDEV_APP_NAME
+    return std::string(CROSSDEV_APP_NAME);
+#else
+    return "CrossDev";
+#endif
+}
+
+std::string ConfigManager::getConfigBaseDirectory() {
+    std::string baseDir;
 #ifdef _WIN32
     // Windows: %APPDATA%\CrossDev
     char appDataPath[MAX_PATH];
     if (SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, appDataPath) == S_OK) {
-        configDir = std::string(appDataPath) + "\\CrossDev";
+        baseDir = std::string(appDataPath) + "\\CrossDev";
     } else {
-        // Fallback to current directory
-        configDir = ".\\CrossDev";
+        baseDir = ".\\CrossDev";
     }
 #elif __APPLE__
     #if TARGET_OS_MAC
-        // macOS: ~/Library/Application Support/CrossDev
         const char* home = getenv("HOME");
         if (home) {
-            configDir = std::string(home) + "/Library/Application Support/CrossDev";
+            baseDir = std::string(home) + "/Library/Application Support/CrossDev";
         } else {
-            configDir = "./CrossDev";
+            baseDir = "./CrossDev";
         }
     #elif TARGET_OS_IPHONE
-        // iOS: App's Documents directory (managed by iOS)
-        // For iOS, we'll use a relative path that works in the app sandbox
-        configDir = "./Documents/CrossDev";
+        baseDir = "./Documents/CrossDev";
     #endif
 #elif __linux__
-    // Linux: ~/.config/CrossDev
     const char* home = getenv("HOME");
     if (home) {
-        configDir = std::string(home) + "/.config/CrossDev";
+        baseDir = std::string(home) + "/.config/CrossDev";
     } else {
-        // Fallback for systems without HOME (shouldn't happen normally)
         struct passwd* pw = getpwuid(getuid());
         if (pw && pw->pw_dir) {
-            configDir = std::string(pw->pw_dir) + "/.config/CrossDev";
+            baseDir = std::string(pw->pw_dir) + "/.config/CrossDev";
         } else {
-            configDir = "./CrossDev";
+            baseDir = "./CrossDev";
         }
     }
 #else
-    // Unknown platform - use current directory
-    configDir = "./CrossDev";
+    baseDir = "./CrossDev";
 #endif
-    
-    return configDir;
+    return baseDir;
+}
+
+std::string ConfigManager::getConfigDirectory() {
+    std::string base = getConfigBaseDirectory();
+#ifdef _WIN32
+    return base + "\\" + getAppName();
+#else
+    return base + "/" + getAppName();
+#endif
 }
 
 std::string ConfigManager::getOptionsFilePath() {
-    return getConfigDirectory() + 
+    return getConfigDirectory() +
 #ifdef _WIN32
            "\\options.json"
 #else
@@ -192,12 +200,45 @@ nlohmann::json ConfigManager::createDefaultOptions() {
     return defaultOptions;
 }
 
+// Legacy path: .../CrossDev/options.json (no app subfolder). Used for migration.
+static std::string getLegacyOptionsFilePath() {
+    std::string base = ConfigManager::getConfigBaseDirectory();
+#ifdef _WIN32
+    return base + "\\options.json";
+#else
+    return base + "/options.json";
+#endif
+}
+
 bool ConfigManager::loadOptions() {
     if (optionsLoaded_) {
         return true;
     }
     
-    // Ensure config directory exists
+    std::string optionsPath = getOptionsFilePath();
+    std::string legacyPath = getLegacyOptionsFilePath();
+    
+    // Migration: if new path doesn't exist but legacy path does, copy legacy -> app folder
+    std::ifstream checkNew(optionsPath);
+    bool newExists = checkNew.is_open();
+    checkNew.close();
+    if (!newExists) {
+        std::ifstream legacy(legacyPath);
+        if (legacy.is_open()) {
+            legacy.close();
+            if (ensureConfigDirectory()) {
+                std::ifstream src(legacyPath, std::ios::binary);
+                std::ofstream dst(optionsPath, std::ios::binary);
+                if (src.is_open() && dst.is_open()) {
+                    dst << src.rdbuf();
+                    src.close();
+                    dst.close();
+                    std::cout << "Migrated options from " << legacyPath << " to " << optionsPath << std::endl;
+                }
+            }
+        }
+    }
+    
     if (!ensureConfigDirectory()) {
         std::cerr << "Warning: Could not create config directory, using defaults" << std::endl;
         options_ = createDefaultOptions();
@@ -205,7 +246,6 @@ bool ConfigManager::loadOptions() {
         return false;
     }
     
-    std::string optionsPath = getOptionsFilePath();
     std::ifstream file(optionsPath);
     
     if (file.is_open()) {
@@ -223,13 +263,9 @@ bool ConfigManager::loadOptions() {
         std::cout << "Options file not found, creating default: " << optionsPath << std::endl;
     }
     
-    // Create default options
     options_ = createDefaultOptions();
     optionsLoaded_ = true;
-    
-    // Save default options to file
     saveOptions();
-    
     return true;
 }
 

@@ -18,6 +18,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Component lifecycle + verbose MessageRouter/CreateWindow/Singleton logging
 option(COMPONENT_DEBUG_LIFECYCLE "Enable component lifecycle and verbose routing/window debug output (default: ON for Debug)" ON)
 
+# App name for config directory: options.json is stored in .../CrossDev/<CROSSDEV_APP_NAME>/
+# Set when building a different app (e.g. Cars) so each app has its own options.json.
+set(CROSSDEV_APP_NAME "CrossDev" CACHE STRING "App name for config directory (options.json in .../CrossDev/<name>/)")
+
 # Cars app: invoice export, etc. When OFF, registerAppHandlers is a no-op (weak stub).
 option(BUILD_CARS_APP "Build Cars app module (createInvoice handler)" ON)
 if(COMPONENT_DEBUG_LIFECYCLE OR CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -333,20 +337,23 @@ if(PLATFORM STREQUAL "ios")
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/ios/Info.plist"
-        MACOSX_BUNDLE_GUI_IDENTIFIER "com.example.${PROJECT_NAME}"
-        MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_NAME}"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.example.${CROSSDEV_APP_NAME}"
+        MACOSX_BUNDLE_BUNDLE_NAME "${CROSSDEV_APP_NAME}"
         XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
         XCODE_ATTRIBUTE_SDKROOT "iphoneos"
         XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS "iphoneos iphonesimulator"
         XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2"
         XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH "NO"
         XCODE_ATTRIBUTE_VALID_ARCHS "arm64 x86_64"
-        XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.example.${PROJECT_NAME}"
+        XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.example.${CROSSDEV_APP_NAME}"
         XCODE_ATTRIBUTE_OTHER_LDFLAGS "$(inherited) -framework UIKit -framework Foundation -framework WebKit"
     )
 else()
     add_executable(${PROJECT_NAME} ${ALL_SOURCES})
 endif()
+
+# Config directory is .../CrossDev/<CROSSDEV_APP_NAME>/options.json (pass string literal to C++)
+target_compile_definitions(${PROJECT_NAME} PRIVATE "CROSSDEV_APP_NAME=\"${CROSSDEV_APP_NAME}\"")
 
 # Link libraries
 if(PLATFORM_LIBS)
@@ -360,7 +367,10 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/external/OpenXLSX/CMakeLists.txt")
     set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     add_subdirectory(external/OpenXLSX)
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenXLSX::OpenXLSX)
+    # When BUILD_CARS_APP is ON, OpenXLSX comes via app_cars -> excel_excel; avoid duplicate link
+    if(NOT BUILD_CARS_APP)
+        target_link_libraries(${PROJECT_NAME} PRIVATE OpenXLSX::OpenXLSX)
+    endif()
     message(STATUS "OpenXLSX: using local external/OpenXLSX")
 else()
     include(FetchContent)
@@ -374,7 +384,9 @@ else()
     set(OPENXLSX_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
     set(OPENXLSX_BUILD_TESTS OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(OpenXLSX)
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenXLSX::OpenXLSX)
+    if(NOT BUILD_CARS_APP)
+        target_link_libraries(${PROJECT_NAME} PRIVATE OpenXLSX::OpenXLSX)
+    endif()
     message(STATUS "OpenXLSX: fetched via FetchContent")
 endif()
 
@@ -510,14 +522,12 @@ if(PLATFORM STREQUAL "ios")
     )
 endif()
 
-# On Windows, avoid double .exe (use base name only; CMake adds .exe)
-if(PLATFORM STREQUAL "windows")
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        RUNTIME_OUTPUT_NAME ${PROJECT_NAME}
-        RUNTIME_OUTPUT_NAME_DEBUG ${PROJECT_NAME}
-        RUNTIME_OUTPUT_NAME_RELEASE ${PROJECT_NAME}
-    )
-endif()
+# Executable name = app name (e.g. CrossDev, Cars) so the built binary matches CROSSDEV_APP_NAME
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_NAME ${CROSSDEV_APP_NAME}
+    RUNTIME_OUTPUT_NAME_DEBUG ${CROSSDEV_APP_NAME}
+    RUNTIME_OUTPUT_NAME_RELEASE ${CROSSDEV_APP_NAME}
+)
 
 # Installation (optional)
 if(PLATFORM STREQUAL "ios")

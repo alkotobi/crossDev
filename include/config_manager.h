@@ -11,10 +11,16 @@ public:
     // Get the singleton instance
     static ConfigManager& getInstance();
     
-    // Get the platform-specific config directory path
+    // Get the app name (from build define CROSSDEV_APP_NAME, default "CrossDev")
+    static std::string getAppName();
+    
+    // Get the platform-specific config base directory (e.g. .../CrossDev, without app name)
+    static std::string getConfigBaseDirectory();
+    
+    // Get the platform-specific config directory path (base + app name, e.g. .../CrossDev/Cars)
     static std::string getConfigDirectory();
     
-    // Get the full path to options.json
+    // Get the full path to options.json (in app-named folder)
     static std::string getOptionsFilePath();
     
     // Load options from file (creates default if doesn't exist)
