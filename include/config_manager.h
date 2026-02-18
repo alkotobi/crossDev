@@ -71,6 +71,10 @@ public:
     
     // Try to load file content from standard locations (cwd, ., .., ../..)
     static std::string tryLoadFileContent(const std::string& filename);
+
+    // Resolve file path to absolute (tries filename, ./, ../, ../../). Empty if not found.
+    // Use this for method "file" so the WebView loads via file URL and relative resources work.
+    static std::string resolveFilePathToAbsolute(const std::string& filename);
     
 private:
     ConfigManager() = default;

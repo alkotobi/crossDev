@@ -34,6 +34,8 @@ namespace platform {
     void executeWebViewScript(void* webViewHandle, const std::string& script);
     // Open native print dialog for the webview content (File menu: Print)
     void printWebView(void* webViewHandle);
+    // Open inspector/developer tools for debugging the webview (View menu: Inspect)
+    void openInspector(void* webViewHandle);
 
     // Window resize callback management
     void setWindowResizeCallback(void* windowHandle, void (*callback)(int width, int height, void* userData), void* userData);

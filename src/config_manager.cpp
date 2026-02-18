@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <filesystem>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -186,6 +187,31 @@ std::string ConfigManager::tryLoadFileContent(const std::string& filename) {
     return tryLoadFromPaths(filename);
 }
 
+namespace {
+    namespace fs = std::filesystem;
+}
+
+// Resolve file path to absolute so the WebView document base is the file's directory (relative resources work).
+std::string ConfigManager::resolveFilePathToAbsolute(const std::string& filename) {
+    if (filename.empty()) return "";
+    fs::path p(filename);
+    if (p.is_absolute()) {
+        try {
+            if (fs::is_regular_file(p)) return fs::absolute(p).string();
+        } catch (...) {}
+        return "";
+    }
+    std::string candidates[] = { filename, "./" + filename, "../" + filename, "../../" + filename };
+    for (const std::string& candidate : candidates) {
+        try {
+            fs::path cp(candidate);
+            if (fs::is_regular_file(cp))
+                return fs::absolute(cp).string();
+        } catch (...) {}
+    }
+    return "";
+}
+
 nlohmann::json ConfigManager::createDefaultOptions() {
     nlohmann::json defaultOptions;
     
@@ -211,21 +237,27 @@ static std::string getLegacyOptionsFilePath() {
 }
 
 bool ConfigManager::loadOptions() {
-    if (optionsLoaded_) {
-        return true;
-    }
+    std::cout << "\n[ConfigManager::loadOptions] ===== CALLED =====" << std::endl;
+    std::cout << "[ConfigManager] optionsLoaded_ flag: " << (optionsLoaded_ ? "TRUE (cached)" : "FALSE (will read)") << std::endl;
+    
+    // CRITICAL FIX: Never skip reading! Always re-read from disk in loadOptions()
+    // The reload handler needs fresh data, not cached data
     
     std::string optionsPath = getOptionsFilePath();
     std::string legacyPath = getLegacyOptionsFilePath();
+    
+    std::cout << "[ConfigManager] Options path: " << optionsPath << std::endl;
     
     // Migration: if new path doesn't exist but legacy path does, copy legacy -> app folder
     std::ifstream checkNew(optionsPath);
     bool newExists = checkNew.is_open();
     checkNew.close();
     if (!newExists) {
+        std::cout << "[ConfigManager] New options file doesn't exist, checking legacy path..." << std::endl;
         std::ifstream legacy(legacyPath);
         if (legacy.is_open()) {
             legacy.close();
+            std::cout << "[ConfigManager] Legacy path found, migrating..." << std::endl;
             if (ensureConfigDirectory()) {
                 std::ifstream src(legacyPath, std::ios::binary);
                 std::ofstream dst(optionsPath, std::ios::binary);
@@ -243,24 +275,37 @@ bool ConfigManager::loadOptions() {
         std::cerr << "Warning: Could not create config directory, using defaults" << std::endl;
         options_ = createDefaultOptions();
         optionsLoaded_ = true;
+        std::cout << "[ConfigManager::loadOptions] Set to defaults, returning FALSE\n" << std::endl;
         return false;
     }
     
+    std::cout << "[ConfigManager] About to read from: " << optionsPath << std::endl;
     std::ifstream file(optionsPath);
     
     if (file.is_open()) {
         try {
+            std::cout << "[ConfigManager] File opened successfully, reading JSON..." << std::endl;
             file >> options_;
             file.close();
-            std::cout << "Loaded options from: " << optionsPath << std::endl;
+            std::cout << "[ConfigManager] ✓ Successfully read options from: " << optionsPath << std::endl;
+            std::cout << "[ConfigManager] HTML method: " << getHtmlLoadingMethod() << std::endl;
+            std::cout << "[ConfigManager] File path: " << getHtmlFilePath() << std::endl;
+            std::cout << "[ConfigManager] URL: " << getHtmlUrl() << std::endl;
             optionsLoaded_ = true;
+            std::cout << "[ConfigManager::loadOptions] Returning TRUE\n" << std::endl;
             return true;
         } catch (const std::exception& e) {
-            std::cerr << "Error parsing options.json: " << e.what() << std::endl;
+            std::cerr << "[ConfigManager] ✗ Error parsing options.json: " << e.what() << std::endl;
             file.close();
         }
     } else {
-        std::cout << "Options file not found, creating default: " << optionsPath << std::endl;
+        std::cout << "[ConfigManager] ✗ Options file not found at: " << optionsPath << std::endl;
+        std::cout << "[ConfigManager] Checking if file exists on disk..." << std::endl;
+        std::ifstream existsCheck(optionsPath);
+        if (!existsCheck.is_open()) {
+            std::cout << "[ConfigManager] File does NOT exist on disk (permission or path issue?)" << std::endl;
+        }
+        existsCheck.close();
     }
     
     options_ = createDefaultOptions();

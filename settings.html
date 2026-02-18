@@ -217,31 +217,30 @@
       saving=true;hide($id('error'));hide($id('saveSuccess'));
       window.CrossDev.invoke('writeOptions',{options:options}).then(function(r){
         saving=false;
-        if(r&&r.success){show($id('saveSuccess'));$id('saveBtn').textContent='Save';setTimeout(function(){hide($id('saveSuccess'));},3000);}
-        else{$id('error').textContent=r&&r.error?r.error:'Failed to save';show($id('error'));}
+        if(r&&r.success){
+          show($id('saveSuccess'));$id('saveBtn').textContent='Save';setTimeout(function(){hide($id('saveSuccess'));},3000);
+          console.log('[Settings] Options saved successfully, reloading main window...');
+          window.CrossDev.invoke('reloadMainWindow',{}).then(function(rr){
+            console.log('[Settings] Main window reload response:', rr);
+          }).catch(function(e){
+            console.error('[Settings] Failed to reload main window:', e);
+          });
+        }
+        else{$id('error').textContent=r&&r.error?r.error:'Failed to save';show($id('error'));console.error('[Settings] Save failed:',r&&r.error);}
       }).catch(function(e){
-        saving=false;$id('error').textContent=e&&e.message?e.message:String(e);show($id('error'));
+        saving=false;$id('error').textContent=e&&e.message?e.message:String(e);show($id('error'));console.error('[Settings] Save request failed:',e);
       });
       $id('saveBtn').textContent='Saving...';
     }
     function browseFile(filterKey,path,inputEl){
-      var titles={html:'Enter HTML file path',js:'Enter preload script path'};
-      var currentVal=inputEl?inputEl.value:'';
-      document.body.classList.add('js-dialog-open');
-      var overlay=document.createElement('div');overlay.className='js-dialog-overlay';
-      var d=document.createElement('div');d.className='js-dialog';
-      var h=document.createElement('h3');h.textContent=titles[filterKey]||'Enter path';d.appendChild(h);
-      var input=document.createElement('input');input.type='text';input.id='jsDialogInput';input.value=currentVal;input.placeholder='e.g. dist/index.html';d.appendChild(input);
-      var acts=document.createElement('div');acts.className='js-dialog-actions';
-      var cancel=document.createElement('button');cancel.type='button';cancel.className='js-dialog-cancel';cancel.textContent='Cancel';acts.appendChild(cancel);
-      var ok=document.createElement('button');ok.type='button';ok.className='js-dialog-ok';ok.textContent='OK';acts.appendChild(ok);
-      d.appendChild(acts);overlay.appendChild(d);document.body.appendChild(overlay);
-      input.focus();input.select();
-      function close(val){document.body.removeChild(overlay);document.body.classList.remove('js-dialog-open');if(val!==undefined&&inputEl)inputEl.value=val;}
-      ok.onclick=function(){close(input.value.trim());};
-      cancel.onclick=function(){close();};
-      overlay.onclick=function(e){if(e.target===overlay)close();};
-      input.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();close(input.value.trim());}if(e.key==='Escape')close();};
+      if(!hasCrossDev()||!inputEl){return;}
+      var titles={html:'Select HTML file',js:'Select preload script'};
+      var filters={html:'HTML Files (*.html)|*.html|All Files (*.*)|*.*',js:'JavaScript (*.js)|*.js|All Files (*.*)|*.*'};
+      var title=titles[filterKey]||'Choose file';
+      var filter=filters[filterKey]||'All Files (*.*)|*.*';
+      window.CrossDev.invoke('openFileDialog',{title:title,filter:filter}).then(function(r){
+        if(r&&r.success&&r.filePath){inputEl.value=r.filePath;}
+      }).catch(function(){});
     }
     document.querySelectorAll('.tab').forEach(function(btn){
       btn.addEventListener('click',function(){

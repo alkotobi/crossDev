@@ -16,6 +16,8 @@
 #include "../include/handlers/context_menu_handler.h"
 #include "../include/handlers/focus_window_handler.h"
 #include "../include/handlers/options_handler.h"
+#include "../include/handlers/reload_main_content_handler.h"
+#include "../include/handlers/reload_main_window_handler.h"
 #include "../include/app_handlers.h"
 #include "platform/platform_impl.h"
 #include <iostream>
@@ -99,12 +101,20 @@ void AppRunner::setupEventHandler() {
                 if (y < 0) y = 150;
                 if (width <= 0) width = 900;
                 if (height <= 0) height = 700;
-                auto attachFn = [this](WebView* wv) {
+                auto attachFn = [this, name](WebView* wv) {
                     if (eventHandler_ && wv && mainWindow_) {
                         std::vector<std::shared_ptr<MessageHandler>> extras;
                         extras.push_back(createFocusWindowHandler());
                         extras.push_back(createOptionsHandler());
                         extras.push_back(createFileDialogHandler(mainWindow_->getWindow()));
+                        // For settings window, add reloadMainWindow to explicitly reload main window
+                        if (name == "settings") {
+                            std::cout << "[AppRunner] Attaching reloadMainWindowHandler to settings window ✓" << std::endl;
+                            extras.push_back(createReloadMainWindowHandler(mainWindow_.get()));
+                        } else {
+                            std::cout << "[AppRunner] Attaching reloadMainContentHandler to window: " << name << std::endl;
+                            extras.push_back(createReloadMainContentHandler(mainWindow_.get()));
+                        }
                         eventHandler_->attachWebView(wv, extras);
                     }
                 };
@@ -121,6 +131,14 @@ void AppRunner::setupEventHandler() {
                         extras.push_back(createFocusWindowHandler());
                         extras.push_back(createOptionsHandler());
                         extras.push_back(createFileDialogHandler(mainWindow_->getWindow()));
+                        // For settings window, add reloadMainWindow to explicitly reload main window
+                        if (name == "settings") {
+                            std::cout << "[AppRunner] Attaching reloadMainWindowHandler to settings window (non-singleton) ✓" << std::endl;
+                            extras.push_back(createReloadMainWindowHandler(mainWindow_.get()));
+                        } else {
+                            std::cout << "[AppRunner] Attaching reloadMainContentHandler to window (non-singleton): " << name << std::endl;
+                            extras.push_back(createReloadMainContentHandler(mainWindow_.get()));
+                        }
                         eventHandler_->attachWebView(child->getWebView(), extras);
                     }
                     child->show();
@@ -149,6 +167,7 @@ void AppRunner::registerHandlers() {
     router->registerHandler(createContextMenuHandler(mainWindow_, eventHandler_->getMessageRouterShared()));
     router->registerHandler(createFocusWindowHandler());
     router->registerHandler(createOptionsHandler());
+    router->registerHandler(createReloadMainContentHandler(mainWindow_.get()));
 
     registerAppHandlers(router);
 }

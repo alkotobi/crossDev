@@ -219,7 +219,15 @@ void* createWebView(void* parentHandle, int x, int y, int width, int height) {
         }
         
         NSRect webViewRect = NSMakeRect(x, y, width, height);
-        WKWebView *webView = [[ClickThroughWebView alloc] initWithFrame:webViewRect];
+        
+        // Create configuration with developer extras enabled for inspector/console access
+        WKWebViewConfiguration *config = [[WKWebViewConfiguration alloc] init];
+        // Enable developer extras (inspector/console)
+        if ([config.preferences respondsToSelector:@selector(setValue:forKey:)]) {
+            [config.preferences setValue:@YES forKey:@"developerExtrasEnabled"];
+        }
+        
+        WKWebView *webView = [[ClickThroughWebView alloc] initWithFrame:webViewRect configuration:config];
         [webView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
         
         [parentView addSubview:webView];
@@ -468,6 +476,36 @@ void printWebView(void* webViewHandle) {
 )";
         executeWebViewScript(webViewHandle, std::string(restoreScript));
     });
+}
+
+void openInspector(void* webViewHandle) {
+    @autoreleasepool {
+        if (!webViewHandle) return;
+        WKWebView *webView = (__bridge WKWebView*)webViewHandle;
+        // Try to open inspector/console using the private API selector if available
+        // On macOS, Cmd+Option+I triggers the inspector if developer extras are enabled
+        SEL selector = NSSelectorFromString(@"_setInspectable:");
+        if ([webView respondsToSelector:selector]) {
+            // Use the private selector to enable inspector (developer tools)
+            IMP imp = [webView methodForSelector:selector];
+            void (*func)(id, SEL, BOOL) = (void (*)(id, SEL, BOOL))imp;
+            func(webView, selector, YES);
+        }
+        // Also try the keyboard shortcut way: simulate Cmd+Option+I
+        NSEvent *keyDown = [NSEvent keyEventWithType:NSEventTypeKeyDown
+                                              location:NSZeroPoint
+                                         modifierFlags:(NSEventModifierFlagCommand | NSEventModifierFlagOption)
+                                             timestamp:[NSDate timeIntervalSinceReferenceDate]
+                                          windowNumber:0
+                                               context:nil
+                                            characters:@"i"
+                                           charactersIgnoringModifiers:@"i"
+                                             isARepeat:NO
+                                               keyCode:0x22]; // 'i' key code
+        if (keyDown && webView.window) {
+            [webView.window sendEvent:keyDown];
+        }
+    }
 }
 
 } // namespace platform

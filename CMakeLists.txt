@@ -132,6 +132,8 @@ set(CORE_SOURCES
     src/handlers/context_menu_handler.cpp
     src/handlers/focus_window_handler.cpp
     src/handlers/options_handler.cpp
+    src/handlers/reload_main_content_handler.cpp
+    src/handlers/reload_main_window_handler.cpp
     ${SETTINGS_EMBED_CPP}
 )
 

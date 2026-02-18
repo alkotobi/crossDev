@@ -92,11 +92,13 @@ WebViewWindow::WebViewWindow(Component* owner, int x, int y, int width, int heig
     } else if (type == WebViewContentType::Url && !content.empty()) {
         webView_->loadURL(content);
     } else if (type == WebViewContentType::File && !content.empty()) {
-        std::string htmlContent = ConfigManager::tryLoadFileContent(content);
-        if (!htmlContent.empty()) {
-            webView_->loadHTMLString(htmlContent);
+        // Always load via file URL so the document base is the file's directory (relative JS/CSS work).
+        std::string absolutePath = ConfigManager::resolveFilePathToAbsolute(content);
+        if (!absolutePath.empty()) {
+            webView_->loadHTMLFile(absolutePath);
         } else {
-            webView_->loadHTMLFile(content);  // Try direct path as fallback
+            webView_->loadHTMLString(
+                "<html><body><h1>File not found</h1><p>Check filePath in options.json: " + content + "</p></body></html>");
         }
     } else {
         webView_->loadHTMLString(DEFAULT_HTML);
@@ -431,6 +433,11 @@ void onMainMenuItem(const std::string& itemId, void* userData) {
         platform::executeWebViewScript(self->getWebView()->getNativeHandle(), "location.reload();");
         return;
     }
+    // View menu: Inspect Element - open developer tools
+    if (itemId == "inspect") {
+        platform::openInspector(self->getWebView()->getNativeHandle());
+        return;
+    }
     // File menu: Print - print the focused window's content, else main window
     if (itemId == "print") {
         WebViewWindow* target = g_focusedWebViewForPrint;
@@ -499,6 +506,7 @@ void WebViewWindow::registerMainMenu() {
     editItems.push_back({{"id", "selectAll"}, {"label", "Select All"}, {"shortcut", "Cmd+A"}});
     json viewItems = json::array();
     viewItems.push_back({{"id", "reload"}, {"label", "Reload"}, {"shortcut", "Cmd+R"}});
+    viewItems.push_back({{"id", "inspect"}, {"label", "Inspect Element"}, {"shortcut", "Cmd+Option+I"}});
     viewItems.push_back({{"id", "zoomIn"}, {"label", "Zoom In"}, {"shortcut", "Cmd++"}});
     viewItems.push_back({{"id", "zoomOut"}, {"label", "Zoom Out"}, {"shortcut", "Cmd+-"}});
     viewItems.push_back({{"id", "zoomReset"}, {"label", "Reset Zoom"}, {"shortcut", "Cmd+0"}});
@@ -542,6 +550,7 @@ void WebViewWindow::registerMainMenu() {
         ]},
         {"id":"view","label":"View","items":[
             {"id":"reload","label":"Reload","shortcut":"Ctrl+R"},
+            {"id":"inspect","label":"Inspect Element","shortcut":"Ctrl+Shift+I"},
             {"id":"zoomIn","label":"Zoom In","shortcut":"Ctrl++"},
             {"id":"zoomOut","label":"Zoom Out","shortcut":"Ctrl+-"},
             {"id":"zoomReset","label":"Reset Zoom","shortcut":"Ctrl+0"}
@@ -581,6 +590,7 @@ void WebViewWindow::registerMainMenu() {
         ]},
         {"id":"view","label":"View","items":[
             {"id":"reload","label":"Reload","shortcut":"Ctrl+R"},
+            {"id":"inspect","label":"Inspect Element","shortcut":"Ctrl+Shift+I"},
             {"id":"zoomIn","label":"Zoom In","shortcut":"Ctrl++"},
             {"id":"zoomOut","label":"Zoom Out","shortcut":"Ctrl+-"},
             {"id":"zoomReset","label":"Reset Zoom","shortcut":"Ctrl+0"}

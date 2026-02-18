@@ -56,7 +56,7 @@ void MessageRouter::routeMessage(const std::string& jsonMessage) {
     
     std::string type, payload, requestId;
     if (!parseMessage(jsonMessage, type, payload, requestId)) {
-        std::cerr << "Failed to parse message: " << jsonMessage << std::endl;
+        std::cerr << "[MessageRouter] Failed to parse message: " << jsonMessage << std::endl;
         if (!requestId.empty()) {
             sendResponse(requestId, "", "Failed to parse message");
         }
@@ -64,11 +64,17 @@ void MessageRouter::routeMessage(const std::string& jsonMessage) {
     }
     
     MSG_LOG(("  Parsed - type: " + type + ", requestId: " + requestId + "\n").c_str());
+    std::cout << "[MessageRouter] Received message type: " << type << " (requestId: " << requestId << ")" << std::endl;
     
     // Find handler for this message type
     auto it = handlers_.find(type);
     if (it == handlers_.end()) {
-        std::cerr << "No handler registered for message type: " << type << std::endl;
+        std::cerr << "[MessageRouter] ERROR: No handler registered for message type: " << type << std::endl;
+        std::cerr << "[MessageRouter] Registered handlers: ";
+        for (const auto& pair : handlers_) {
+            std::cerr << pair.first << " ";
+        }
+        std::cerr << std::endl;
         if (!requestId.empty()) {
             sendResponse(requestId, "", "Unknown message type: " + type);
         }
@@ -83,7 +89,7 @@ void MessageRouter::routeMessage(const std::string& jsonMessage) {
         }
         payloadJson["_type"] = type;  // Inject message type so handlers can use it
     } catch (const nlohmann::json::exception& e) {
-        std::cerr << "Failed to parse payload JSON: " << e.what() << std::endl;
+        std::cerr << "[MessageRouter] Failed to parse payload JSON: " << e.what() << std::endl;
         if (!requestId.empty()) {
             sendResponse(requestId, "", "Invalid payload JSON: " + std::string(e.what()));
         }
@@ -92,9 +98,11 @@ void MessageRouter::routeMessage(const std::string& jsonMessage) {
     
     // Call handler
     MSG_LOG(("Calling handler for type: " + type + "\n").c_str());
+    std::cout << "[MessageRouter] Calling handler for type: " << type << std::endl;
     try {
         nlohmann::json result = it->second->handle(payloadJson, requestId);
         MSG_LOG(("Handler returned result: " + result.dump().substr(0, 150) + "\n").c_str());
+        std::cout << "[MessageRouter] Handler returned successfully" << std::endl;
         
         // Send response if requestId was provided
         if (!requestId.empty()) {

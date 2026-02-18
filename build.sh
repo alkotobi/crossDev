@@ -22,3 +22,35 @@ echo "Config: build_dir=$BUILD_DIR app_name=$APP_NAME"
 cmake -S . -B "$BUILD_DIR" -DCROSSDEV_APP_NAME="$APP_NAME"
 cmake --build "$BUILD_DIR"
 echo "Done: $BUILD_DIR"
+
+# Ask whether to run the app
+ABS_BUILD="$(cd "$ROOT" && cd "$BUILD_DIR" && pwd)"
+EXEC=""
+if [ -x "$ABS_BUILD/$APP_NAME" ]; then
+  EXEC="$ABS_BUILD/$APP_NAME"
+elif [ -x "$ABS_BUILD/Debug/$APP_NAME" ]; then
+  EXEC="$ABS_BUILD/Debug/$APP_NAME"
+elif [ -x "$ABS_BUILD/Release/$APP_NAME" ]; then
+  EXEC="$ABS_BUILD/Release/$APP_NAME"
+elif [ -d "$ABS_BUILD/$APP_NAME.app" ]; then
+  EXEC="$ABS_BUILD/$APP_NAME.app"
+elif [ -d "$ABS_BUILD/Debug/$APP_NAME.app" ]; then
+  EXEC="$ABS_BUILD/Debug/$APP_NAME.app"
+elif [ -d "$ABS_BUILD/Release/$APP_NAME.app" ]; then
+  EXEC="$ABS_BUILD/Release/$APP_NAME.app"
+fi
+
+if [ -n "$EXEC" ] && [ -t 0 ]; then
+  printf "Run the app? [y/N] "
+  read -r answer
+  case "$answer" in
+    [yY]|[yY][eE][sS])
+      if [ -d "$EXEC" ]; then
+        open "$EXEC"
+      else
+        "$EXEC"
+      fi
+      ;;
+    *) ;;
+  esac
+fi

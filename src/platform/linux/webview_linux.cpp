@@ -390,6 +390,18 @@ void resizeWebView(void* webViewHandle, int width, int height) {
     }
 }
 
+void openInspector(void* webViewHandle) {
+    if (!webViewHandle) return;
+    WebViewData* data = static_cast<WebViewData*>(webViewHandle);
+    if (data && data->webView) {
+        // On Linux with WebKit, we can use the Inspector API
+        WebKitWebInspector *inspector = webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(data->webView));
+        if (inspector) {
+            webkit_web_inspector_show(inspector);
+        }
+    }
+}
+
 } // namespace platform
 
 #endif // PLATFORM_LINUX

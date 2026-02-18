@@ -1288,7 +1288,6 @@ void resizeWebView(void* webViewHandle, int width, int height) {
 #endif
 }
 
-#ifdef HAVE_WEBVIEW2
 void processDeferredWebViewMessage(LPARAM lParam) {
     DeferredWebViewMessage* d = (DeferredWebViewMessage*)lParam;
     if (d && d->message && d->callback) {
@@ -1302,6 +1301,17 @@ void processDeferredWebViewMessage(LPARAM /*lParam*/) {
     // Stub when WebView2 not available - should not be called
 }
 #endif
+
+void openInspector(void* webViewHandle) {
+    if (!webViewHandle) return;
+    WebViewData* data = static_cast<WebViewData*>(webViewHandle);
+#ifdef HAVE_WEBVIEW2
+    if (data->webview) {
+        // Open DevTools by simulating Ctrl+Shift+I keyboard shortcut
+        data->webview->OpenDevToolsWindow();
+    }
+#endif
+}
 
 } // namespace platform
 
