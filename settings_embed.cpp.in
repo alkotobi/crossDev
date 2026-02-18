@@ -1,0 +1,10 @@
+// Auto-generated from settings.html - do not edit. Edit cross_dev/settings.html and rebuild.
+#include "settings_embed.h"
+#include <string>
+
+const std::string& getEmbeddedSettingsHtml() {
+    static const std::string html = R"SETTINGSEND(
+@SETTINGS_HTML_BODY@
+)SETTINGSEND";
+    return html;
+}

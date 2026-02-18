@@ -1,41 +1,97 @@
-# Prerequisites
-*.d
+# ------------------------------------------------------------------------------
+# CrossDev - Cross-platform development project
+# https://github.com/alkotobi/crossDev
+# ------------------------------------------------------------------------------
 
-# Compiled Object files
-*.slo
-*.lo
+# --- OS / editor ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+*~
+*.swp
+*.swo
+*.swn
+
+# --- CMake ---
+build_mac/
+build_check/
+build_*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+!cmake/*.cmake
+.cmake/
+pkgRedirects/
+
+# --- C/C++ / build artifacts ---
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
+*.a
+*.lib
 *.so
 *.dylib
 *.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
 *.exe
 *.out
 *.app
+*.ipa
+*.lo
+*.la
+.libs/
 
-# debug information files
-*.dwo
+# --- PHP static build (build-php-static) ---
+build-php-static/buildroot/
+build-php-static/pkgroot/
+build-php-static/log/
+build-php-static/downloads/
+
+# --- IDE / editors ---
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vcxproj.user
+*.vcxproj.filters
+*.ncb
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.VC.opendb
+
+# --- Local / generated data (optional: remove lines to track) ---
+*.db
+*.mdb
+*.sqlite
+*.xlsx
+!excel_template_*.xlsx
+*.log
+*.tmp
+*.temp
+*.bak
+*.cache
+
+# --- Node / JS (if used) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# --- Markdown (track README only) ---
+*.md
+!README.md
+
+# --- Misc ---
+*.patch
+*.orig
+.env
+.env.local
+*.pem

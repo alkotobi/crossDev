@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Router Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            font-size: 1.5em;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        p {
+            margin-top: 20px;
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Message Router Demo</h1>
+        <p style="margin-bottom: 30px;">This demo showcases the new class-based message handler system with request/response pattern.</p>
+        
+        <div style="margin: 20px 0; padding: 15px; background: rgba(255, 255, 255, 0.15); border-radius: 10px;">
+            <h2 style="font-size: 1.5em; margin-bottom: 20px;">Demo Handlers</h2>
+            
+            <div style="margin: 15px 0;">
+                <h3 style="font-size: 1.2em; margin-bottom: 10px;">1. Create Window Handler</h3>
+                <button id="createWindowBtn" style="padding: 10px 20px; font-size: 14px; margin-right: 10px;">Create New Window</button>
+                <div id="createWindowResult" style="margin-top: 10px; color: rgba(255,255,255,0.9);"></div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <h3 style="font-size: 1.2em; margin-bottom: 10px;">1b. Native Events</h3>
+                <p style="font-size: 0.9em; opacity: 0.85;">window:focus, window:blur, window:resize, window:move, window:close, window:minimize, window:maximize, window:restore, file:dropped, menu:item, menu:context, app:activate, app:deactivate, app:quit, theme:changed</p>
+                <div id="eventLog" style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 5px; min-height: 40px; font-family: monospace; font-size: 12px; color: #90EE90;">Listening for native events...</div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <h3 style="font-size: 1.2em; margin-bottom: 10px;">2. App Info Handler (Returns Data)</h3>
+                <button id="getAppInfoBtn" style="padding: 10px 20px; font-size: 14px; margin-right: 10px;">Get App Info</button>
+                <button id="invokeTestBtn" style="padding: 10px 20px; font-size: 14px; background: #2196F3;">Test CrossDev.invoke()</button>
+                <button id="getPlatformBtn" style="padding: 10px 20px; font-size: 14px;">Get Platform Only</button>
+                <div id="appInfoResult" style="margin-top: 10px; color: rgba(255,255,255,0.9); font-family: monospace; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; max-height: 200px; overflow-y: auto;"></div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <h3 style="font-size: 1.2em; margin-bottom: 10px;">3. Calculator Handler (Returns Calculation Results)</h3>
+                <div style="margin: 10px 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <input type="number" id="calcA" placeholder="Number A" value="10" style="width: 100px; padding: 5px; border-radius: 5px; border: none;">
+                    <select id="calcOp" style="padding: 5px; border-radius: 5px; border: none;">
+                        <option value="add">+</option>
+                        <option value="subtract">-</option>
+                        <option value="multiply">×</option>
+                        <option value="divide">÷</option>
+                    </select>
+                    <input type="number" id="calcB" placeholder="Number B" value="5" style="width: 100px; padding: 5px; border-radius: 5px; border: none;">
+                    <button id="calculateBtn" style="padding: 10px 20px; font-size: 14px;">Calculate</button>
+                </div>
+                <div id="calcResult" style="margin-top: 10px; color: rgba(255,255,255,0.9); font-family: monospace; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px;"></div>
+            </div>
+            
+            <div style="margin: 15px 0;">
+                <h3 style="font-size: 1.2em; margin-bottom: 10px;">4. File Dialog Handler (Opens Native File Dialog)</h3>
+                <button id="openFileDialogBtn" style="padding: 10px 20px; font-size: 14px; margin-right: 10px;">Open File Dialog</button>
+                <button id="openHTMLFileBtn" style="padding: 10px 20px; font-size: 14px;">Open HTML File</button>
+                <div id="fileDialogResult" style="margin-top: 10px; color: rgba(255,255,255,0.9); font-family: monospace; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; min-height: 30px;">
+                    <div style="color: rgba(255,255,255,0.6);">No file selected yet</div>
+                </div>
+            </div>
+
+            <div style="margin: 15px 0;">
+                <h3 style="font-size: 1.2em; margin-bottom: 10px;">5. Context Menu (right-click anywhere)</h3>
+                <p style="color: rgba(255,255,255,0.8); margin-bottom: 10px;">Right-click on the page to show the native context menu.</p>
+                <div id="contextMenuResult" style="margin-top: 10px; color: rgba(255,255,255,0.9); font-family: monospace; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; min-height: 30px;">
+                    <span style="color: rgba(255,255,255,0.6);">Last selected: (none)</span>
+                </div>
+            </div>
+
+            <div style="margin: 15px 0;">
+                <h3 style="font-size: 1.2em; margin-bottom: 10px;">6. Binary File (readFile / writeFile)</h3>
+                <div style="margin: 10px 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                    <input type="text" id="readFilePath" placeholder="Path to read" value="demo.html" style="width: 200px; padding: 5px; border-radius: 5px; border: none;">
+                    <button id="readFileBtn" style="padding: 10px 20px; font-size: 14px;">Read File</button>
+                    <input type="text" id="writeFilePath" placeholder="Path to write" value="demo_out.txt" style="width: 200px; padding: 5px; border-radius: 5px; border: none;">
+                    <button id="writeFileBtn" style="padding: 10px 20px; font-size: 14px;">Write Test File</button>
+                </div>
+                <div id="binaryFileResult" style="margin-top: 10px; color: rgba(255,255,255,0.9); font-family: monospace; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; min-height: 30px; max-height: 120px; overflow-y: auto;">
+                    <div style="color: rgba(255,255,255,0.6);">Use readFile/writeFile with base64</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Global response handler map
+        const pendingRequests = new Map();
+        
+        // Set up global message listener for WebView2 (Windows)
+        console.log('=== Setting up message listeners ===');
+        console.log('window.chrome exists:', typeof window.chrome !== 'undefined');
+        console.log('window.chrome.webview exists:', typeof window.chrome !== 'undefined' && typeof window.chrome.webview !== 'undefined');
+        console.log('window.chrome.webview.addEventListener exists:', typeof window.chrome !== 'undefined' && typeof window.chrome.webview !== 'undefined' && typeof window.chrome.webview.addEventListener === 'function');
+        console.log('window.__webview2ReceiveMessage exists:', typeof window.__webview2ReceiveMessage !== 'undefined');
+        
+        // Function to set up the listener (can be called multiple times)
+        const setupWebView2Listener = function() {
+            console.log('Attempting to set up WebView2 listener...');
+            
+            if (window.chrome && window.chrome.webview && window.chrome.webview.addEventListener) {
+                console.log('✓ addEventListener is available, setting up listener...');
+                
+                // Remove any existing listener first (we'll use a named function)
+                if (window.__webview2MessageListener) {
+                    console.log('Removing existing listener...');
+                    window.chrome.webview.removeEventListener('message', window.__webview2MessageListener);
+                }
+                
+                // Create named listener function
+                window.__webview2MessageListener = function(event) {
+                    console.log('=== WebView2 MESSAGE RECEIVED ===');
+                    console.log('Event:', event);
+                    console.log('Event.data:', event.data);
+                    console.log('Event.data type:', typeof event.data);
+                    console.log('Pending requests:', Array.from(pendingRequests.keys()));
+                    
+                    try {
+                        // event.data should be the parsed object
+                        const data = event.data;
+                        console.log('Parsed message data:', JSON.stringify(data, null, 2));
+                        
+                        if (data && data.requestId) {
+                            console.log('Looking for handler for requestId:', data.requestId);
+                            const handler = pendingRequests.get(data.requestId);
+                            
+                            if (handler) {
+                                console.log('✓✓✓ Found handler! Resolving promise with result:', data.result);
+                                pendingRequests.delete(data.requestId);
+                                if (data.error) {
+                                    console.log('Rejecting with error:', data.error);
+                                    handler.reject(new Error(data.error));
+                                } else {
+                                    console.log('Resolving with result:', JSON.stringify(data.result, null, 2));
+                                    handler.resolve(data.result);
+                                }
+                            } else {
+                                console.warn('✗ No handler found for requestId:', data.requestId);
+                                console.warn('Available requestIds:', Array.from(pendingRequests.keys()));
+                            }
+                        } else {
+                            console.warn('✗ Message missing requestId:', data);
+                        }
+                    } catch (e) {
+                        console.error('✗ Error handling WebView2 response:', e);
+                        console.error('Stack:', e.stack);
+                    }
+                };
+                
+                window.chrome.webview.addEventListener('message', window.__webview2MessageListener);
+                console.log('✓✓✓ WebView2 message listener registered successfully!');
+                return true;
+            } else {
+                console.log('addEventListener not available yet');
+                return false;
+            }
+        };
+        
+        // Try to set up immediately
+        if (!setupWebView2Listener()) {
+            // Retry with exponential backoff
+            let attempt = 0;
+            const maxAttempts = 20;
+            const retry = function() {
+                attempt++;
+                console.log('Retry attempt', attempt, 'of', maxAttempts);
+                if (setupWebView2Listener() || attempt >= maxAttempts) {
+                    if (attempt >= maxAttempts) {
+                        console.error('✗ Failed to set up WebView2 listener after', maxAttempts, 'attempts');
+                    }
+                } else {
+                    setTimeout(retry, 100);
+                }
+            };
+            setTimeout(retry, 100);
+        }
+        
+        // Also check for WKWebView
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeMessage) {
+            console.log('WKWebView also available');
+        }
+        
+        // Set up global message listener for WKWebView (macOS/iOS/Linux)
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeMessage) {
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.requestId) {
+                    const handler = pendingRequests.get(event.data.requestId);
+                    if (handler) {
+                        pendingRequests.delete(event.data.requestId);
+                        if (event.data.error) {
+                            handler.reject(new Error(event.data.error));
+                        } else {
+                            handler.resolve(event.data.result);
+                        }
+                    }
+                }
+            });
+            console.log('WKWebView global message listener set up');
+        }
+        
+        // Helper function to send message with request ID and handle response
+        function sendNativeMessage(type, payload) {
+            return new Promise((resolve, reject) => {
+                const requestId = Date.now() + '-' + Math.random();
+                const message = {
+                    type: type,
+                    payload: payload || {},
+                    requestId: requestId
+                };
+                
+                console.log('=== SENDING MESSAGE ===');
+                console.log('Type:', type);
+                console.log('Payload:', payload);
+                console.log('RequestId:', requestId);
+                console.log('Full message:', JSON.stringify(message, null, 2));
+                
+                // Store the promise handlers
+                pendingRequests.set(requestId, { resolve, reject });
+                console.log('Stored handler for requestId:', requestId);
+                console.log('Total pending requests:', pendingRequests.size);
+                
+                // Set timeout to clean up if no response
+                setTimeout(() => {
+                    if (pendingRequests.has(requestId)) {
+                        console.warn('✗ Request timeout for requestId:', requestId);
+                        pendingRequests.delete(requestId);
+                        reject(new Error('Request timeout - no response received after 10 seconds'));
+                    }
+                }, 10000); // 10 second timeout
+                
+                // Send message
+                if (window.chrome && window.chrome.webview) {
+                    // Windows WebView2
+                    console.log('Checking postMessage availability...');
+                    console.log('postMessage type:', typeof window.chrome.webview.postMessage);
+                    console.log('postMessage value:', window.chrome.webview.postMessage);
+                    
+                    if (window.chrome.webview.postMessage && typeof window.chrome.webview.postMessage === 'function') {
+                        console.log('Sending via WebView2 postMessage...');
+                        const messageStr = JSON.stringify(message);
+                        console.log('Message string:', messageStr);
+                        try {
+                            window.chrome.webview.postMessage(messageStr);
+                            console.log('✓ Message sent via WebView2 postMessage');
+                        } catch (e) {
+                            console.error('✗ Error calling postMessage:', e);
+                            pendingRequests.delete(requestId);
+                            reject(new Error('Failed to send message: ' + e.message));
+                            return;
+                        }
+                    } else {
+                        console.error('✗ postMessage is not a function!');
+                        console.error('Available properties:', Object.keys(window.chrome.webview));
+                        pendingRequests.delete(requestId);
+                        reject(new Error('WebView2 postMessage not available'));
+                        return;
+                    }
+                } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeMessage) {
+                    // macOS/iOS/Linux WKWebView
+                    console.log('Sending via WKWebView messageHandlers...');
+                    window.webkit.messageHandlers.nativeMessage.postMessage(message);
+                    console.log('Message sent via WKWebView');
+                } else {
+                    console.error('✗ Web view messaging not available');
+                    console.error('chrome.webview.postMessage:', typeof window.chrome !== 'undefined' && typeof window.chrome.webview !== 'undefined' && typeof window.chrome.webview.postMessage !== 'undefined');
+                    console.error('webkit.messageHandlers:', typeof window.webkit !== 'undefined' && typeof window.webkit.messageHandlers !== 'undefined');
+                    pendingRequests.delete(requestId);
+                    reject(new Error('Web view messaging not available'));
+                }
+            });
+        }
+        
+        // Demo 1: Create Window Handler
+        // Supports: { title, url?, html?, file?|filePath? }
+        // Priority: url > html > file > default HTML
+        document.getElementById('createWindowBtn').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('createWindowResult');
+            resultDiv.textContent = 'Creating window...';
+            resultDiv.style.color = 'rgba(255,255,255,0.7)';
+            
+            try {
+                const result = await sendNativeMessage('createWindow', {
+                    className: 'demo-window',
+                    title: 'New Window ' + Date.now(),
+                    isSingleton: false
+                    // Optional: url: 'http://localhost:5173', html: '<html>...</html>', or file: '/path/to/file.html'
+                });
+                console.log('Window created successfully:', result);
+                resultDiv.textContent = '✓ Window created: ' + result.title;
+                resultDiv.style.color = '#90EE90';
+            } catch (error) {
+                console.error('Failed to create window:', error);
+                resultDiv.textContent = '✗ Error: ' + error.message;
+                resultDiv.style.color = '#FFB6C1';
+            }
+        });
+        
+        // Test CrossDev.invoke() Promise API (injected by bridge)
+        document.getElementById('invokeTestBtn').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('appInfoResult');
+            if (!window.CrossDev || !window.CrossDev.invoke) {
+                resultDiv.textContent = 'CrossDev.invoke not available';
+                return;
+            }
+            resultDiv.textContent = 'Calling CrossDev.invoke(\'getAppInfo\')...';
+            try {
+                const result = await window.CrossDev.invoke('getAppInfo', {});
+                resultDiv.textContent = '[CrossDev.invoke] ' + JSON.stringify(result, null, 2);
+                resultDiv.style.color = '#90EE90';
+            } catch (e) {
+                resultDiv.textContent = 'Error: ' + e.message;
+                resultDiv.style.color = '#FFB6C1';
+            }
+        });
+        
+        // Demo 2: App Info Handler - Get all info
+        document.getElementById('getAppInfoBtn').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('appInfoResult');
+            resultDiv.textContent = 'Loading app info...';
+            resultDiv.style.color = 'rgba(255,255,255,0.7)';
+            
+            try {
+                const result = await sendNativeMessage('getAppInfo', {});
+                console.log('App info received:', result);
+                resultDiv.textContent = JSON.stringify(result, null, 2);
+                resultDiv.style.color = 'rgba(255,255,255,0.9)';
+            } catch (error) {
+                console.error('Failed to get app info:', error);
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.style.color = '#FFB6C1';
+            }
+        });
+        
+        // Demo 2b: App Info Handler - Get specific fields only
+        document.getElementById('getPlatformBtn').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('appInfoResult');
+            resultDiv.textContent = 'Loading platform info...';
+            resultDiv.style.color = 'rgba(255,255,255,0.7)';
+            
+            try {
+                const result = await sendNativeMessage('getAppInfo', {
+                    fields: ['platform', 'osVersion']
+                });
+                console.log('Platform info received:', result);
+                resultDiv.textContent = JSON.stringify(result, null, 2);
+                resultDiv.style.color = 'rgba(255,255,255,0.9)';
+            } catch (error) {
+                console.error('Failed to get platform info:', error);
+                resultDiv.textContent = 'Error: ' + error.message;
+                resultDiv.style.color = '#FFB6C1';
+            }
+        });
+        
+        // Demo 3: Calculator Handler
+        document.getElementById('calculateBtn').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('calcResult');
+            const a = parseFloat(document.getElementById('calcA').value);
+            const b = parseFloat(document.getElementById('calcB').value);
+            const op = document.getElementById('calcOp').value;
+            
+            if (isNaN(a) || isNaN(b)) {
+                resultDiv.textContent = 'Please enter valid numbers';
+                resultDiv.style.color = '#FFB6C1';
+                return;
+            }
+            
+            resultDiv.textContent = 'Calculating...';
+            resultDiv.style.color = 'rgba(255,255,255,0.7)';
+            
+            try {
+                const result = await sendNativeMessage('calculate', {
+                    operation: op,
+                    a: a,
+                    b: b
+                });
+                
+                console.log('Calculation result:', result);
+                
+                if (result.success) {
+                    const opSymbols = {add: '+', subtract: '-', multiply: '×', divide: '÷'};
+                    resultDiv.textContent = `${a} ${opSymbols[op]} ${b} = ${result.result}`;
+                    resultDiv.style.color = '#90EE90';
+                    resultDiv.style.fontSize = '18px';
+                    resultDiv.style.fontWeight = 'bold';
+                } else {
+                    resultDiv.textContent = '✗ Error: ' + result.error;
+                    resultDiv.style.color = '#FFB6C1';
+                }
+            } catch (error) {
+                console.error('Calculation failed:', error);
+                resultDiv.textContent = '✗ Error: ' + error.message;
+                resultDiv.style.color = '#FFB6C1';
+            }
+        });
+        
+        // Demo 4: File Dialog Handler
+        document.getElementById('openFileDialogBtn').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('fileDialogResult');
+            resultDiv.innerHTML = '<div style="color: rgba(255,255,255,0.7);">Opening file dialog...</div>';
+            
+            try {
+                const result = await sendNativeMessage('openFileDialog', {
+                    title: 'Select a File',
+                    filter: 'All Files (*.*)|*.*'
+                });
+                
+                console.log('File dialog result:', result);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div style="color: #90EE90; font-weight: bold; margin-bottom: 5px;">✓ File Selected:</div>
+                        <div style="color: rgba(255,255,255,0.9);">File Name: <strong>${result.fileName}</strong></div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9em; margin-top: 5px;">Path: ${result.filePath}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div style="color: #FFB6C1;">✗ ${result.error || 'No file selected'}</div>`;
+                }
+            } catch (error) {
+                console.error('File dialog failed:', error);
+                resultDiv.innerHTML = `<div style="color: #FFB6C1;">✗ Error: ${error.message}</div>`;
+            }
+        });
+        
+        // Demo 4b: File Dialog Handler - HTML files only
+        document.getElementById('openHTMLFileBtn').addEventListener('click', async function() {
+            const resultDiv = document.getElementById('fileDialogResult');
+            resultDiv.innerHTML = '<div style="color: rgba(255,255,255,0.7);">Opening HTML file dialog...</div>';
+            
+            try {
+                const result = await sendNativeMessage('openFileDialog', {
+                    title: 'Select HTML File',
+                    filter: 'HTML Files (*.html)|*.html|All Files (*.*)|*.*'
+                });
+                
+                console.log('HTML file dialog result:', result);
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div style="color: #90EE90; font-weight: bold; margin-bottom: 5px;">✓ HTML File Selected:</div>
+                        <div style="color: rgba(255,255,255,0.9);">File Name: <strong>${result.fileName}</strong></div>
+                        <div style="color: rgba(255,255,255,0.7); font-size: 0.9em; margin-top: 5px;">Path: ${result.filePath}</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div style="color: #FFB6C1;">✗ ${result.error || 'No file selected'}</div>`;
+                }
+            } catch (error) {
+                console.error('HTML file dialog failed:', error);
+                resultDiv.innerHTML = `<div style="color: #FFB6C1;">✗ Error: ${error.message}</div>`;
+            }
+        });
+        
+        // Demo 5: Binary file (readFile / writeFile) - uses CrossDev.invoke with binaryResponse
+        async function doReadFile() {
+            var path = document.getElementById('readFilePath').value.trim();
+            var resultDiv = document.getElementById('binaryFileResult');
+            if (!path) { resultDiv.textContent = 'Enter a path'; return; }
+            if (!window.CrossDev || !window.CrossDev.invoke) {
+                resultDiv.textContent = 'CrossDev.invoke not available';
+                return;
+            }
+            resultDiv.textContent = 'Reading...';
+            resultDiv.style.color = 'rgba(255,255,255,0.7)';
+            try {
+                var r = await window.CrossDev.invoke('readFile', { path: path }, { binaryResponse: true });
+                if (r.success && r.data instanceof ArrayBuffer) {
+                    var dec = new TextDecoder().decode(r.data);
+                    resultDiv.textContent = 'Read ' + r.size + ' bytes. First 200 chars: ' + dec.substring(0, 200) + (dec.length > 200 ? '...' : '');
+                } else if (r.success) {
+                    resultDiv.textContent = 'Read ' + (r.size || 0) + ' bytes (base64)';
+                } else {
+                    resultDiv.textContent = 'Error: ' + (r.error || 'Unknown');
+                    resultDiv.style.color = '#FFB6C1';
+                    return;
+                }
+                resultDiv.style.color = '#90EE90';
+            } catch (e) {
+                resultDiv.textContent = 'Error: ' + e.message;
+                resultDiv.style.color = '#FFB6C1';
+            }
+        }
+        async function doWriteFile() {
+            var path = document.getElementById('writeFilePath').value.trim();
+            var resultDiv = document.getElementById('binaryFileResult');
+            if (!path) { resultDiv.textContent = 'Enter a path'; return; }
+            if (!window.CrossDev || !window.CrossDev.invoke) {
+                resultDiv.textContent = 'CrossDev.invoke not available';
+                return;
+            }
+            resultDiv.textContent = 'Writing...';
+            resultDiv.style.color = 'rgba(255,255,255,0.7)';
+            try {
+                var text = 'Hello from CrossDev binary write at ' + new Date().toISOString();
+                var enc = new TextEncoder().encode(text);
+                var r = await window.CrossDev.invoke('writeFile', { path: path, data: enc.buffer });
+                if (r.success) {
+                    resultDiv.textContent = 'Wrote ' + r.bytesWritten + ' bytes to ' + path;
+                    resultDiv.style.color = '#90EE90';
+                } else {
+                    resultDiv.textContent = 'Error: ' + (r.error || 'Unknown');
+                    resultDiv.style.color = '#FFB6C1';
+                }
+            } catch (e) {
+                resultDiv.textContent = 'Error: ' + e.message;
+                resultDiv.style.color = '#FFB6C1';
+            }
+        }
+        var readFileBtn = document.getElementById('readFileBtn');
+        var writeFileBtn = document.getElementById('writeFileBtn');
+        if (readFileBtn) readFileBtn.addEventListener('click', doReadFile);
+        if (writeFileBtn) writeFileBtn.addEventListener('click', doWriteFile);
+
+        // Context menu: right-click shows native context menu
+        document.addEventListener('contextmenu', async function(e) {
+            e.preventDefault();
+            var resultDiv = document.getElementById('contextMenuResult');
+            if (resultDiv) resultDiv.innerHTML = '<span style="color: rgba(255,255,255,0.7);">Showing menu...</span>';
+            try {
+                var result = await sendNativeMessage('showContextMenu', { x: e.clientX, y: e.clientY });
+                if (result && result.itemId) {
+                    if (resultDiv) resultDiv.innerHTML = 'Last selected: <b>' + result.itemId + '</b>';
+                    console.log('Context menu selected:', result.itemId);
+                } else if (resultDiv) {
+                    resultDiv.innerHTML = '<span style="color: rgba(255,255,255,0.6);">Cancelled</span>';
+                }
+            } catch (err) {
+                if (resultDiv) resultDiv.innerHTML = '<span style="color: #FFB6C1;">Error: ' + err.message + '</span>';
+                console.error('Context menu error:', err);
+            }
+        });
+
+        // Event streams: listen for all native events
+        (function setupEventListeners() {
+            var log = document.getElementById('eventLog');
+            function addEvent(name, payload) {
+                if (!log) return;
+                var line = document.createElement('div');
+                line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + name + (payload && Object.keys(payload).length ? ' ' + JSON.stringify(payload) : '');
+                line.style.marginBottom = '4px';
+                log.appendChild(line);
+                while (log.children.length > 12) log.removeChild(log.firstChild);
+            }
+            if (window.CrossDev && window.CrossDev.events) {
+                window.CrossDev.events.on('window:focus', function() { addEvent('window:focus'); });
+                window.CrossDev.events.on('window:blur', function() { addEvent('window:blur'); });
+                window.CrossDev.events.on('window:resize', function(p) { addEvent('window:resize', p); });
+                window.CrossDev.events.on('window:move', function(p) { addEvent('window:move', p); });
+                window.CrossDev.events.on('window:close', function() { addEvent('window:close'); });
+                window.CrossDev.events.on('window:minimize', function(p) { addEvent('window:minimize', p); });
+                window.CrossDev.events.on('window:maximize', function(p) { addEvent('window:maximize', p); });
+                window.CrossDev.events.on('window:restore', function(p) { addEvent('window:restore', p); });
+                window.CrossDev.events.on('file:dropped', function(p) { addEvent('file:dropped', p); });
+                window.CrossDev.events.on('menu:item', function(p) { addEvent('menu:item', p); });
+                window.CrossDev.events.on('menu:context', function(p) { addEvent('menu:context', p); });
+                window.CrossDev.events.on('app:activate', function() { addEvent('app:activate'); });
+                window.CrossDev.events.on('app:deactivate', function() { addEvent('app:deactivate'); });
+                window.CrossDev.events.on('app:quit', function() { addEvent('app:quit'); });
+                window.CrossDev.events.on('theme:changed', function(p) { addEvent('theme:changed', p); });
+            } else {
+                setTimeout(setupEventListeners, 100);
+            }
+        })();
+        
+        // Check if messaging is available
+        if ((window.chrome && window.chrome.webview && window.chrome.webview.postMessage) ||
+            (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeMessage)) {
+            console.log('Web view messaging initialized');
+            console.log('Available message types: createWindow({className, title, url?, html?, file?, isSingleton?}), getAppInfo, calculate, openFileDialog');
+        } else {
+            console.warn('Web view messaging not available - buttons may not work');
+        }
+    </script>
+</body>
+</html>

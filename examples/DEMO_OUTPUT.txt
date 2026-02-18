@@ -1,0 +1,82 @@
+=== CrossDev Component & Layout System Demo ===
+
+Example 1: Vertical Layout with Buttons
+✓ Created vertical layout with 4 buttons
+  - Layout spacing: 10px
+  - Layout controls: 4
+
+Example 2: Horizontal Layout with Buttons
+✓ Created horizontal layout with 3 buttons
+  - Layout spacing: 5px
+  - Layout controls: 3
+
+Example 3: Nested Layouts
+✓ Created nested layouts
+  - Outer panel: outerPanel
+  - Inner panel: innerPanel
+  - Inner panel owner: mainWindow
+  - Inner panel parent: outerPanel
+
+Example 4: Component Lookup by Name
+✓ Found button by name: Button 1
+✓ Found panel by name: buttonPanel
+  - Panel has 0 owned components
+
+Example 5: Owner vs Parent Separation
+✓ Created button with different Owner and Parent
+  - Button owner: mainWindow
+  - Button parent: demoPanel
+  - When window is destroyed, button is automatically cleaned up
+  - Button is visually displayed in demoPanel
+
+Example 6: Component Enumeration
+Window owns X components:
+  [0] buttonPanel (type: Container)
+  [1] horizontalPanel (type: Container)
+  [2] outerPanel (type: Container)
+  [3] demoPanel (type: Container)
+  [4] formPanel (type: Container)
+  [5] vLayout (type: VerticalLayout)
+  [6] hLayout (type: HorizontalLayout)
+  [7] outerLayout (type: VerticalLayout)
+  [8] innerLayout (type: HorizontalLayout)
+  [9] formLayout (type: VerticalLayout)
+  [10] btn1 (type: Button)
+  [11] btn2 (type: Button)
+  [12] btn3 (type: Button)
+  [13] btn4 (type: Button)
+  [14] okButton (type: Button)
+  [15] cancelButton (type: Button)
+  [16] applyButton (type: Button)
+  [17] titleLabel (type: Button)
+  [18] saveBtn (type: Button)
+  [19] resetBtn (type: Button)
+  [20] demoButton (type: Button)
+  [21] nameField (type: InputField)
+  [22] emailField (type: InputField)
+  [23] submitButton (type: Button)
+
+Example 7: Layout with Input Fields
+✓ Created form with vertical layout
+  - Name input field
+  - Email input field
+  - Submit button
+
+=== Summary ===
+✓ Component ownership system (automatic cleanup)
+✓ Parent-based visual hierarchy
+✓ Vertical and Horizontal layouts
+✓ Nested layouts (containers in containers)
+✓ Component naming and lookup
+✓ Component enumeration
+✓ Owner and Parent can be different
+✓ Layout spacing and margins
+
+Total components owned by window: 24
+All components will be automatically cleaned up when window is destroyed.
+
+Demo UI created! The window should be visible.
+Click buttons to see callbacks in action.
+Try resizing the window to see layout updates.
+
+Press Enter to exit...
