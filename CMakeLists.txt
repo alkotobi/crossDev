@@ -136,7 +136,6 @@ set(CORE_SOURCES
     src/handlers/reload_main_window_handler.cpp
     ${SETTINGS_EMBED_CPP}
 )
-
 list(APPEND CORE_SOURCES src/app_handlers_stub.cpp)
 
 # Platform-specific sources

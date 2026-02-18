@@ -60,11 +60,15 @@ static bool showOpenFileDialogImpl(void* windowHandle, const std::string& title,
             }
         }
         
-        // Configure panel
         [panel setAllowsMultipleSelection:NO];
-        [panel setCanChooseFiles:YES];
-        [panel setCanChooseDirectories:NO];
-        [panel setAllowsOtherFileTypes:YES];  // Allow user to select "All Files" / override filter
+        if (filter == "DIRECTORY") {
+            [panel setCanChooseFiles:NO];
+            [panel setCanChooseDirectories:YES];
+        } else {
+            [panel setCanChooseFiles:YES];
+            [panel setCanChooseDirectories:NO];
+        }
+        [panel setAllowsOtherFileTypes:YES];
         
         // Set default directory
         [panel setDirectoryURL:[NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Documents"]]];
