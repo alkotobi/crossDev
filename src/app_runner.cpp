@@ -34,7 +34,7 @@ using RegisterAppHandlersFn = void (*)(MessageRouter*);
 static std::string getExecutableDir(const char* argv0) {
     namespace fs = std::filesystem;
     try {
-        fs::path p = fs::absolute(fs::path(argv0));
+        std::filesystem::path p = std::filesystem::absolute(std::filesystem::path(argv0));
         return p.parent_path().string();
     } catch (...) {
         return "";

@@ -352,6 +352,33 @@ if(PLATFORM_LIBS)
     endif()
 endif()
 
+set(MDBTOSQLITE_MAIN_DB "${CMAKE_SOURCE_DIR}/../mdbTosqlite/main.sqlite")
+if(EXISTS "${MDBTOSQLITE_MAIN_DB}")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MDBTOSQLITE_MAIN_DB}"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/main.sqlite"
+    )
+endif()
+
+set(MDBTOSQLITE_SPECIAL_DB "${CMAKE_SOURCE_DIR}/../mdbTosqlite/mdbs/special.sqlite")
+if(EXISTS "${MDBTOSQLITE_SPECIAL_DB}")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MDBTOSQLITE_SPECIAL_DB}"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/special.sqlite"
+    )
+endif()
+
+set(MDBTOSQLITE_PLUGIN_LIB "${CMAKE_SOURCE_DIR}/../mdbTosqlite/plugin/build/libCrossDevAppPlugin.dylib")
+if(EXISTS "${MDBTOSQLITE_PLUGIN_LIB}")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MDBTOSQLITE_PLUGIN_LIB}"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/libCrossDevAppPlugin.dylib"
+    )
+endif()
+
 # OpenXLSX for Excel export (template-based .xlsx: copy template, fill cells)
 # Use external/OpenXLSX if present (e.g. git submodule), else FetchContent
 if(EXISTS "${CMAKE_SOURCE_DIR}/external/OpenXLSX/CMakeLists.txt")

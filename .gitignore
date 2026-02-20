@@ -13,6 +13,11 @@ ehthumbs.db
 *.swp
 *.swo
 *.swn
+*.mdb
+*.sqlite
+*.db
+
+
 
 # --- CMake ---
 build_mac/
